@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel OTA - ESP32</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        input, button { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #000; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { background-color: #333; }
+        #status { margin-top: 15px; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 style="margin-top: 0;">Upload de Firmware OTA</h2>
+    
+    <label>Nome do Projeto (ex: projeto_a):</label>
+    <input type="text" id="projeto" value="projeto_a">
+
+    <label>Nova Versão (ex: 2.0.0):</label>
+    <input type="text" id="versao" value="2.0.0">
+
+    <label>Selecione o arquivo .bin:</label>
+    <input type="file" id="arquivo" accept=".bin">
+
+    <button onclick="enviarFirmware()">Fazer Upload para a Vercel</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    async function enviarFirmware() {
+        const projeto = document.getElementById('projeto').value.trim();
+        const versao = document.getElementById('versao').value.trim();
+        const arquivo = document.getElementById('arquivo').files[0];
+
+        if (!projeto || !versao || !arquivo) {
+            alert("Por favor, preencha todos os campos e selecione o arquivo!");
+            return;
+        }
+
+        const statusDiv = document.getElementById('status');
+        statusDiv.innerText = "Enviando arquivo... Aguarde.";
+        statusDiv.style.color = "blue";
+
+        const formData = new FormData();
+        formData.append("versao", versao);
+        formData.append("firmware", arquivo);
+
+        try {
+            // O caminho relativo "/api/upload/" faz o navegador usar o domínio atual automaticamente
+            const resposta = await fetch(`/api/upload/${projeto}`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const textoResposta = await resposta.text();
+            
+            if (resposta.ok) {
+                statusDiv.innerText = "Sucesso! O servidor OTA foi atualizado.";
+                statusDiv.style.color = "green";
+                document.getElementById('arquivo').value = ""; // Limpa o input do arquivo
+            } else {
+                statusDiv.innerText = "Erro: " + textoResposta;
+                statusDiv.style.color = "red";
+            }
+        } catch (erro) {
+            statusDiv.innerText = "Erro de conexão: " + erro.message;
+            statusDiv.style.color = "red";
+        }
+    }
+</script>
+
+</body>
+</html>
