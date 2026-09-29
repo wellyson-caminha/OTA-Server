@@ -6,7 +6,10 @@ const { Redis } = require('@upstash/redis'); // Pacote atualizado
 
 const app = express();
 const upload = multer({ dest: '/tmp/' }); 
-const redis = Redis.fromEnv(); // Inicializa a conexão com o banco
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 // ROTA 1: ESP32 busca por atualizações
 app.get('/api/update/:projeto', async (req, res) => {
@@ -43,7 +46,7 @@ app.post('/api/upload/:projeto', upload.single('firmware'), async (req, res) => 
         const fileData = fs.readFileSync(file.path);
         const blob = await put(`${projeto}/${novaVersao}.bin`, fileData, {
             access: 'public',
-            addRandomSuffix: false
+            addRandomSuffix: true
         });
 
         // Agora usamos redis.set em vez de kv.set
@@ -67,3 +70,10 @@ app.post('/api/upload/:projeto', upload.single('firmware'), async (req, res) => 
 });
 
 module.exports = app;
+
+// Desativa o body parser padrão da Vercel para o Multer conseguir ler o arquivo .bin
+module.exports.config = {
+    api: {
+        bodyParser: false,
+    },
+};
